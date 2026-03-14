@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 감정 분석 - AI Hub</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .sentiment-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .input-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 2rem;
+            padding: 2.5rem;
+            margin-top: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 1.1rem;
+            resize: none;
+            outline: none;
+            transition: border-color 0.3s ease;
+            margin-bottom: 1.5rem;
+        }
+        textarea:focus {
+            border-color: var(--primary);
+        }
+        .result-panel {
+            margin-top: 2rem;
+            padding: 2rem;
+            border-radius: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            display: none;
+            text-align: center;
+        }
+        .sentiment-badge {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            border-radius: 2rem;
+            font-weight: 700;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+        .label-positive { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid #4ade80; }
+        .label-neutral { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; border: 1px solid #cbd5e1; }
+        .label-negative { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #f87171; }
+        
+        .score-bar-container {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            margin-top: 1rem;
+            overflow: hidden;
+        }
+        .score-bar {
+            height: 100%;
+            width: 0%;
+            transition: width 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: var(--text-muted);
+            text-decoration: none;
+            margin-bottom: 2rem;
+            font-weight: 600;
+            transition: color 0.2s ease;
+        }
+        .back-link:hover {
+            color: var(--primary);
+        }
+        .back-link svg {
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container sentiment-container">
+        <a href="/" class="back-link">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            허브로 돌아가기
+        </a>
+
+        <header>
+            <h1>AI 감정 분석 (Sentiment Analysis)</h1>
+            <p>한국어 관용구에 강한 KcELECTRA와 다국어 RoBERTa 모델을 사용하여 텍스트의 감정을 정밀하게 분석합니다.</p>
+        </header>
+
+        <div class="input-panel">
+            <textarea id="text-input" placeholder="분석할 텍스트를 입력하세요 (한국어, 영어 모두 지원)..."></textarea>
+            
+            <button class="btn" id="analyze-btn">감정 분석하기</button>
+
+            <div id="error-msg" class="error" style="margin-top: 1rem; text-align: center; display: none;"></div>
+            
+            <div class="spinner" id="loading-spinner" style="margin-top: 2rem;"></div>
+
+            <div class="result-panel" id="result-panel">
+                <div id="sentiment-badge" class="sentiment-badge">POSITIVE</div>
+                <div style="color: var(--text-muted); font-size: 0.9rem;">신뢰도: <span id="score-text">0%</span></div>
+                <div class="score-bar-container">
+                    <div id="score-bar" class="score-bar"></div>
+                </div>
+                <p id="analysis-summary" style="margin-top: 1.5rem; font-size: 1.1rem;"></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/sentiment_app.js"></script>
+</body>
+</html>

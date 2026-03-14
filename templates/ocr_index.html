@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI OCR - 텍스트 추출</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .ocr-container { max-width: 800px; margin: 0 auto; }
+        .result-panel { background: var(--card-bg); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 2rem; padding: 2.5rem; margin-top: 2rem; }
+        .result-list { list-style: none; padding: 0; }
+        .result-item { padding: 1rem; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; }
+        .result-item:last-child { border-bottom: none; }
+        .back-link { display: inline-flex; align-items: center; color: var(--text-muted); text-decoration: none; margin-bottom: 2rem; font-weight: 600; transition: color 0.2s ease; }
+        .back-link:hover { color: var(--primary); }
+    </style>
+</head>
+<body>
+    <div class="container ocr-container">
+        <a href="/" class="back-link">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            허브로 돌아가기
+        </a>
+        <header>
+            <h1>AI OCR 서비스</h1>
+            <p>이미지 속 한국어와 영어 텍스트를 정밀하게 추출합니다.</p>
+        </header>
+
+        <div class="result-panel">
+            <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
+                <div id="upload-prompt">
+                    <p style="font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem;">이미지를 업로드하세요</p>
+                    <p style="font-size: 0.9rem; color: var(--text-muted);">클릭하거나 드래그 앤 드롭</p>
+                </div>
+                <input type="file" id="file-input" accept="image/*" style="display:none">
+            </div>
+
+            <button class="btn" id="process-btn" style="margin-top: 1.5rem;">텍스트 추출하기</button>
+            <div id="error-msg" class="error" style="margin-top: 1rem; text-align: center; display: none;"></div>
+            <div class="spinner" id="loading-spinner" style="margin-top: 2rem;"></div>
+
+            <div id="results-area" style="margin-top: 2rem; display: none;">
+                <h3 style="margin-bottom: 1rem; color: var(--text-muted);">추출 결과</h3>
+                <ul id="ocr-list" class="result-list"></ul>
+            </div>
+        </div>
+    </div>
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const processBtn = document.getElementById('process-btn');
+        const resultsArea = document.getElementById('results-area');
+        const ocrList = document.getElementById('ocr-list');
+        const spinner = document.getElementById('loading-spinner');
+        const errorMsg = document.getElementById('error-msg');
+
+        processBtn.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) { errorMsg.textContent = '이미지를 선택해주세요.'; errorMsg.style.display = 'block'; return; }
+            
+            errorMsg.style.display = 'none';
+            spinner.style.display = 'block';
+            resultsArea.style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await fetch('/ocr/api/process', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    ocrList.innerHTML = '';
+                    if (data.results.length === 0) {
+                        ocrList.innerHTML = '<li>텍스트가 발견되지 않았습니다.</li>';
+                    } else {
+                        data.results.forEach(item => {
+                            const li = document.createElement('li');
+                            li.className = 'result-item';
+                            li.innerHTML = `<span>${item.text}</span> <span style="font-size: 0.8rem; color: var(--text-muted);">${(item.confidence * 100).toFixed(1)}%</span>`;
+                            ocrList.appendChild(li);
+                        });
+                    }
+                    resultsArea.style.display = 'block';
+                    resultsArea.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    errorMsg.textContent = data.detail || '처리 중 오류가 발생했습니다.';
+                    errorMsg.style.display = 'block';
+                }
+            } catch (e) {
+                errorMsg.textContent = '서버 통신 오류가 발생했습니다.';
+                errorMsg.style.display = 'block';
+            } finally {
+                spinner.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

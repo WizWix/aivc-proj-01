@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 얼굴 유사도 - 비교</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .face-container { max-width: 900px; margin: 0 auto; }
+        .control-panel { background: var(--card-bg); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 2rem; padding: 2.5rem; margin-top: 2rem; }
+        .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+        .compare-result { margin-top: 2.5rem; padding: 2rem; border-radius: 1.5rem; text-align: center; display: none; }
+        .match { background: rgba(34, 197, 94, 0.1); border: 1px solid #4ade80; color: #4ade80; }
+        .mismatch { background: rgba(239, 68, 68, 0.1); border: 1px solid #f87171; color: #f87171; }
+        .back-link { display: inline-flex; align-items: center; color: var(--text-muted); text-decoration: none; margin-bottom: 2rem; font-weight: 600; transition: color 0.2s ease; }
+        .back-link:hover { color: var(--primary); }
+    </style>
+</head>
+<body>
+    <div class="container face-container">
+        <a href="/" class="back-link">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            허브로 돌아가기
+        </a>
+        <header>
+            <h1>AI 얼굴 유사도 비교</h1>
+            <p>OpenCV SFace 모델을 사용하여 두 이미지 속 인물의 동일인 여부를 분석합니다.</p>
+        </header>
+
+        <div class="control-panel">
+            <div class="upload-grid">
+                <div class="upload-area" id="drop-1" onclick="document.getElementById('input-1').click()">
+                    <p id="name-1" style="font-size: 0.9rem;">첫 번째 인물 업로드</p>
+                    <input type="file" id="input-1" accept="image/*" style="display:none">
+                </div>
+                <div class="upload-area" id="drop-2" onclick="document.getElementById('input-2').click()">
+                    <p id="name-2" style="font-size: 0.9rem;">두 번째 인물 업로드</p>
+                    <input type="file" id="input-2" accept="image/*" style="display:none">
+                </div>
+            </div>
+
+            <button class="btn" id="compare-btn">유사도 분석하기</button>
+            <div id="error-msg" class="error" style="margin-top: 1rem; text-align: center; display: none;"></div>
+            <div class="spinner" id="loading-spinner" style="margin-top: 2rem;"></div>
+
+            <div id="result-box" class="compare-result">
+                <h2 id="result-status" style="margin-bottom: 0.5rem;"></h2>
+                <p style="font-size: 1.1rem; opacity: 0.9;">신뢰도 점수: <span id="score">0%</span></p>
+                <p id="result-desc" style="margin-top: 1rem; font-size: 0.95rem;"></p>
+            </div>
+        </div>
+    </div>
+    <script>
+        const i1 = document.getElementById('input-1');
+        const i2 = document.getElementById('input-2');
+        const n1 = document.getElementById('name-1');
+        const n2 = document.getElementById('name-2');
+        const btn = document.getElementById('compare-btn');
+        const resBox = document.getElementById('result-box');
+        const resStat = document.getElementById('result-status');
+        const resScore = document.getElementById('score');
+        const resDesc = document.getElementById('result-desc');
+        const spinner = document.getElementById('loading-spinner');
+        const errorMsg = document.getElementById('error-msg');
+
+        [i1, i2].forEach((inp, idx) => inp.addEventListener('change', e => {
+            const nameEl = idx === 0 ? n1 : n2;
+            nameEl.textContent = e.target.files[0] ? e.target.files[0].name : (idx === 0 ? '첫 번째 인물' : '두 번째 인물');
+        }));
+
+        btn.addEventListener('click', async () => {
+            if (!i1.files[0] || !i2.files[0]) { alert('두 이미지를 모두 선택해주세요.'); return; }
+            errorMsg.style.display = 'none'; resBox.style.display = 'none'; spinner.style.display = 'block';
+
+            const formData = new FormData();
+            formData.append('img1', i1.files[0]);
+            formData.append('img2', i2.files[0]);
+
+            try {
+                const res = await fetch('/face-recognition/api/process', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    resBox.className = 'compare-result ' + (data.is_same ? 'match' : 'mismatch');
+                    resStat.textContent = data.is_same ? '동일인일 가능성이 높습니다' : '서로 다른 인물로 판단됩니다';
+                    resScore.textContent = (data.similarity * 100).toFixed(2) + '%';
+                    resDesc.textContent = data.is_same ? '두 얼굴의 특징점이 일치합니다.' : '얼굴의 특징적 차이가 뚜렷합니다.';
+                    resBox.style.display = 'block';
+                    resBox.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    errorMsg.textContent = data.error || data.detail || '분석 중 오류가 발생했습니다.';
+                    errorMsg.style.display = 'block';
+                }
+            } catch (e) {
+                errorMsg.textContent = '서버 통신 오류가 발생했습니다.';
+                errorMsg.style.display = 'block';
+            } finally {
+                spinner.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

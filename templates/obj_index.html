@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 객체 탐지 - Object Detection</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .obj-container { max-width: 900px; margin: 0 auto; }
+        .control-panel { background: var(--card-bg); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 2rem; padding: 2.5rem; margin-top: 2rem; }
+        .preview-area { position: relative; width: 100%; min-height: 400px; background: rgba(15, 23, 42, 0.4); border: 1px solid var(--glass-border); border-radius: 1.5rem; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-top: 2rem; }
+        .preview-area img { max-width: 100%; border-radius: 1rem; display: none; }
+        .back-link { display: inline-flex; align-items: center; color: var(--text-muted); text-decoration: none; margin-bottom: 2rem; font-weight: 600; transition: color 0.2s ease; }
+        .back-link:hover { color: var(--primary); }
+    </style>
+</head>
+<body>
+    <div class="container obj-container">
+        <a href="/" class="back-link">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            허브로 돌아가기
+        </a>
+        <header>
+            <h1>AI 객체 탐지 (Object Detection)</h1>
+            <p>MediaPipe EfficientDet 모델을 사용하여 사물의 종류와 위치를 실시간으로 탐지합니다.</p>
+        </header>
+
+        <div class="control-panel">
+            <div class="upload-area" onclick="document.getElementById('file-input').click()">
+                <p id="upload-text">사물 탐지를 진행할 이미지를 업로드하세요</p>
+                <input type="file" id="file-input" accept="image/*" style="display:none">
+            </div>
+
+            <button class="btn" id="process-btn" style="margin-top: 1.5rem;">객체 탐지 시작</button>
+            <div id="error-msg" class="error" style="margin-top: 1rem; text-align: center; display: none;"></div>
+            <div class="spinner" id="loading-spinner" style="margin-top: 2rem;"></div>
+
+            <div class="preview-area" id="preview-area">
+                <p id="placeholder-text" style="color: var(--text-muted);">탐지 결과가 여기에 표시됩니다.</p>
+                <img id="result-img" alt="Object Detection Result">
+            </div>
+        </div>
+    </div>
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const processBtn = document.getElementById('process-btn');
+        const resultImg = document.getElementById('result-img');
+        const placeholder = document.getElementById('placeholder-text');
+        const spinner = document.getElementById('loading-spinner');
+        const errorMsg = document.getElementById('error-msg');
+
+        fileInput.addEventListener('change', () => {
+             if (fileInput.files[0]) document.getElementById('upload-text').textContent = fileInput.files[0].name;
+        });
+
+        processBtn.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+            errorMsg.style.display = 'none'; spinner.style.display = 'block'; resultImg.style.display = 'none'; placeholder.style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await fetch('/object-detection/api/process', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    resultImg.src = data.result_image;
+                    resultImg.style.display = 'block';
+                    resultImg.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    errorMsg.textContent = '탐지 중 오류가 발생했습니다.';
+                    errorMsg.style.display = 'block';
+                }
+            } catch (e) {
+                errorMsg.textContent = '서버 통신 오류가 발생했습니다.';
+                errorMsg.style.display = 'block';
+            } finally {
+                spinner.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
